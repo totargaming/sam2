@@ -58,7 +58,7 @@ frame_names = sorted([p for p in os.listdir(frame_dir) if os.path.splitext(p)[-1
 inference_state = predictor.init_state(video_path=frame_dir)
 predictor.reset_state(inference_state)
 
-points, labels = np.array([[1100, 900]], dtype=np.float32), np.array([1], np.int32)
+points, labels = np.array([[1100, 1150]], dtype=np.float32), np.array([1], np.int32)
 _, out_obj_ids, out_mask_logits = predictor.add_new_points_or_box(inference_state, frame_idx=0, obj_id=1, points=points, labels=labels)
 
 video_segments = {out_frame_idx: {out_obj_id: (out_mask_logits[i] > 0.0).cpu().numpy() for i, out_obj_id in enumerate(out_obj_ids)} for out_frame_idx, out_obj_ids, out_mask_logits in predictor.propagate_in_video(inference_state)}
