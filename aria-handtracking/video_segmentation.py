@@ -7,6 +7,7 @@ import cv2
 from sam2.build_sam import build_sam2_video_predictor
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 import gc
+import time
 
 # Set device for computation
 os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
@@ -54,7 +55,7 @@ while cap.isOpened():
 cap.release()
 
 # Process video frames
-frame_names = sorted([p for p in os.listdir(frame_dir) if os.path.splitext(p)[-1].lower() in [".jpg", ".jpeg"]], key=lambda p: int(os.path.splitext(p)[0]))
+frame_names = sorted([p for p in os.listdir(frame_dir) if os.path.splitext(p)[-1].lower() in [".jpg", ".jpeg"]], key=lambda p: int(os.path.splitext(p)[0].split('_')[-1]))
 inference_state = predictor.init_state(video_path=frame_dir)
 predictor.reset_state(inference_state)
 
@@ -68,6 +69,9 @@ fps = 30
 frame = cv2.imread(os.path.join(frame_dir, frame_names[0]))
 height, width, _ = frame.shape
 video = cv2.VideoWriter(output_video_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (width, height))
+
+# Start timing
+start_time = time.time()
 
 for frame_idx in range(len(frame_names)):
     frame = Image.open(os.path.join(frame_dir, frame_names[frame_idx]))
@@ -87,3 +91,8 @@ for frame_idx in range(len(frame_names)):
     print(f"Processed frame {frame_idx + 1}/{len(frame_names)}")
 
 video.release()
+
+# End timing
+end_time = time.time()
+elapsed_time = end_time - start_time
+print(f"Total time taken: {elapsed_time:.2f} seconds")
