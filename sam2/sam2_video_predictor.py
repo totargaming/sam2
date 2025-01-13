@@ -42,7 +42,7 @@ class SAM2VideoPredictor(SAM2Base):
     def init_state(
         self,
         video_path,
-        offload_video_to_cpu=False,
+        offload_video_to_cpu=True,
         offload_state_to_cpu=False,
         async_loading_frames=False,
     ):
