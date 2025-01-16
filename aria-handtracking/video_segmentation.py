@@ -39,8 +39,8 @@ def show_box(box, ax):
     ax.add_patch(plt.Rectangle(box[:2], *(box[2:] - box[:2]), edgecolor='green', facecolor=(0, 0, 0, 0), lw=2))
 
 # Convert MP4 to frames
-input_video_path = "./videos/test.mp4"
-frame_dir = "./videos/frames"
+input_video_path = "./videos/Handtrack.mp4"
+frame_dir = "./videos/framesList"
 os.makedirs(frame_dir, exist_ok=True)
 
 cap = cv2.VideoCapture(input_video_path)
