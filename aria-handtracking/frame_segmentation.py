@@ -38,59 +38,41 @@ def show_points(coords, labels, ax, marker_size=200):
 def show_box(box, ax):
     ax.add_patch(plt.Rectangle(box[:2], *(box[2:] - box[:2]), edgecolor='green', facecolor=(0, 0, 0, 0), lw=2))
 
-# Convert MP4 to frames
-input_video_path = "./videos/pickupcam2.mp4"
-frame_dir = "./videos/framesListcam2"
-os.makedirs(frame_dir, exist_ok=True)
-
-cap = cv2.VideoCapture(input_video_path)
-frame_idx = 0
-while cap.isOpened():
-    ret, frame = cap.read()
-    if not ret:
-        break
-    frame_path = os.path.join(frame_dir, f"{frame_idx:05d}.jpg")
-    cv2.imwrite(frame_path, frame)
-    frame_idx += 1
-cap.release()
+# Input and output directories
+frame_dir = "./datasets/flour"
+output_dir = "./datasets/flour_output"
+os.makedirs(output_dir, exist_ok=True)
 
 # Process video frames
 frame_names = sorted([p for p in os.listdir(frame_dir) if os.path.splitext(p)[-1].lower() in [".jpg", ".jpeg"]], key=lambda p: int(os.path.splitext(p)[0].split('_')[-1]))
 inference_state = predictor.init_state(video_path=frame_dir)
 predictor.reset_state(inference_state)
 
-points, labels = np.array([[100, 100]], dtype=np.float32), np.array([1], np.int32)
+points, labels = np.array([[450,420]], dtype=np.float32), np.array([1], np.int32)
 _, out_obj_ids, out_mask_logits = predictor.add_new_points_or_box(inference_state, frame_idx=0, obj_id=1, points=points, labels=labels)
 
 video_segments = {out_frame_idx: {out_obj_id: (out_mask_logits[i] > 0.0).cpu().numpy() for i, out_obj_id in enumerate(out_obj_ids)} for out_frame_idx, out_obj_ids, out_mask_logits in predictor.propagate_in_video(inference_state)}
-
-output_video_path = "output_video.mp4"
-fps = 30
-frame = cv2.imread(os.path.join(frame_dir, frame_names[0]))
-height, width, _ = frame.shape
-video = cv2.VideoWriter(output_video_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (width, height))
 
 # Start timing
 start_time = time.time()
 
 for frame_idx in range(len(frame_names)):
     frame = Image.open(os.path.join(frame_dir, frame_names[frame_idx]))
-    fig, ax = plt.subplots(figsize=(width / 100, height / 100), dpi=100)
+    fig, ax = plt.subplots(figsize=(frame.width / 100, frame.height / 100), dpi=100)
     ax.axis('off')
     ax.imshow(frame)
     for obj_id, mask in video_segments.get(frame_idx, {}).items():
         show_mask(mask, ax, obj_id=obj_id)
     canvas = FigureCanvas(fig)
     canvas.draw()
-    img = np.frombuffer(canvas.tostring_argb(), dtype='uint8').reshape(height, width, 4)
+    img = np.frombuffer(canvas.tostring_argb(), dtype='uint8').reshape(fig.canvas.get_width_height()[::-1] + (4,))
     img = img[:, :, [1, 2, 3]]  # Convert ARGB to RGB
-    video.write(cv2.cvtColor(img, cv2.COLOR_RGB2BGR))
+    output_frame_path = os.path.join(output_dir, f"{frame_idx:05d}.jpg")
+    cv2.imwrite(output_frame_path, cv2.cvtColor(img, cv2.COLOR_RGB2BGR))
     plt.close(fig)
     del frame, fig, ax, canvas, img  # Free up memory
     gc.collect()  # Force garbage collection
     print(f"Processed frame {frame_idx + 1}/{len(frame_names)}")
-
-video.release()
 
 # End timing
 end_time = time.time()
