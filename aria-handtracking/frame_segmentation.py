@@ -39,8 +39,8 @@ def show_box(box, ax):
     ax.add_patch(plt.Rectangle(box[:2], *(box[2:] - box[:2]), edgecolor='green', facecolor=(0, 0, 0, 0), lw=2))
 
 # Input and output directories
-frame_dir = "./datasets/flour"
-output_dir = "./datasets/flour_output"
+frame_dir = "./datasets/0kFTKgyEx9c_267"
+output_dir = "./datasets/0kFTKgyEx9c_267_output"
 os.makedirs(output_dir, exist_ok=True)
 
 # Process video frames
@@ -48,7 +48,7 @@ frame_names = sorted([p for p in os.listdir(frame_dir) if os.path.splitext(p)[-1
 inference_state = predictor.init_state(video_path=frame_dir)
 predictor.reset_state(inference_state)
 
-points, labels = np.array([[450,380]], dtype=np.float32), np.array([1], np.int32)
+points, labels = np.array([[62,404]], dtype=np.float32), np.array([1], np.int32)
 _, out_obj_ids, out_mask_logits = predictor.add_new_points_or_box(inference_state, frame_idx=0, obj_id=1, points=points, labels=labels)
 
 video_segments = {out_frame_idx: {out_obj_id: (out_mask_logits[i] > 0.0).cpu().numpy() for i, out_obj_id in enumerate(out_obj_ids)} for out_frame_idx, out_obj_ids, out_mask_logits in predictor.propagate_in_video(inference_state)}
@@ -62,8 +62,7 @@ for frame_idx in range(len(frame_names)):
     ax.axis('off')
     ax.imshow(frame)
     for obj_id, mask in video_segments.get(frame_idx, {}).items():
-        inverted_mask = np.logical_not(mask)  # Invert the mask
-        show_mask(inverted_mask, ax, obj_id=obj_id)
+        show_mask(mask, ax, obj_id=obj_id)
     canvas = FigureCanvas(fig)
     canvas.draw()
     img = np.frombuffer(canvas.tostring_argb(), dtype='uint8').reshape(fig.canvas.get_width_height()[::-1] + (4,))
