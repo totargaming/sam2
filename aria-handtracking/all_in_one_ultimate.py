@@ -36,23 +36,25 @@ def show_mask(mask, ax, obj_id=None, random_color=False):
 
 # Load coordinates from CSV file
 coordinates = []
-with open('coordinates.csv', 'r') as f:
+with open('ver.csv', 'r') as f:
     reader = csv.DictReader(f)
     for row in reader:
         coordinates.append({
             'folder_name': row['folder_name'],
             'point': [float(row['point_x']), float(row['point_y'])],
-            'box': [float(row['box_x1']), float(row['box_y1']), float(row['box_x2']), float(row['box_y2'])]
+            'box': [float(row['box_x1']), float(row['box_y1']), float(row['box_x1']) + float(row['width']), float(row['box_y1']) + float(row['height'])],
+            'frame': int(row['frame'])
         })
 
 for coord in coordinates:
     folder_name = coord['folder_name']
     point = np.array(coord['point'], dtype=np.float32)
     box = np.array(coord['box'], dtype=np.float32)
+    frame_index = coord['frame']
 
-    frame_dir = f"./datasets/{folder_name}"
-    output_dir_box = f"./collected/{folder_name}_output_box"
-    output_dir_dot = f"./collected/{folder_name}_output_dot"
+    frame_dir = f"./HOIST/valid/JPEGImages/{folder_name}"
+    output_dir_box = f"./TEST/{folder_name}_output_box"
+    output_dir_dot = f"./TEST/{folder_name}_output_dot"
     os.makedirs(output_dir_box, exist_ok=True)
     os.makedirs(output_dir_dot, exist_ok=True)
 
@@ -61,7 +63,7 @@ for coord in coordinates:
     # Box prompt
     inference_state = predictor.init_state(video_path=frame_dir)
     predictor.reset_state(inference_state)
-    ann_frame_idx = 0  # the frame index we interact with
+    ann_frame_idx = frame_index  # the frame index we interact with
     ann_obj_id = 1  # give a unique id to each object we interact with (it can be any integers)
     _, out_obj_ids, out_mask_logits = predictor.add_new_points_or_box(inference_state, frame_idx=ann_frame_idx, obj_id=ann_obj_id, box=box)
 
@@ -71,7 +73,7 @@ for coord in coordinates:
     inference_state = predictor.init_state(video_path=frame_dir)
     predictor.reset_state(inference_state)
     points, labels = point.reshape(1, -1), np.array([1], np.int32)
-    _, out_obj_ids, out_mask_logits = predictor.add_new_points_or_box(inference_state, frame_idx=0, obj_id=1, points=points, labels=labels)
+    _, out_obj_ids, out_mask_logits = predictor.add_new_points_or_box(inference_state, frame_idx=frame_index, obj_id=1, points=points, labels=labels)
 
     video_segments_dot = {out_frame_idx: {out_obj_id: (out_mask_logits[i] > 0.0).cpu().numpy() for i, out_obj_id in enumerate(out_obj_ids)} for out_frame_idx, out_obj_ids, out_mask_logits in predictor.propagate_in_video(inference_state)}
 

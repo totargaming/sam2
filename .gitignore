@@ -12,3 +12,5 @@ demo/backend/checkpoints/*.pt
 aria-handtracking/videos/framesList/*
 aria-handtracking/datasets/*
 aria-handtracking/HOIST/*
+aria-handtracking/collected
+aria-handtracking/TEST
